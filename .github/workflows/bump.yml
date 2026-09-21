@@ -1,0 +1,41 @@
+name: Bump
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Bump, build and tag
+        run: |
+          set -euo pipefail
+
+          NEXT=$(go run ./cmd/bump)
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$NEXT" >/dev/null; then
+            echo "tag $NEXT already exists, skipping"
+            exit 0
+          fi
+
+          go build ./...
+
+          printf '%s' "$NEXT" > VERSION.txt
+
+          git -c user.name="github-actions[bot]" \
+              -c user.email="github-actions[bot]@users.noreply.github.com" \
+              commit -am "chore: bump to $NEXT"
+          git tag "$NEXT"
+          git push origin HEAD --tags

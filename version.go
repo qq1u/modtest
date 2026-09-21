@@ -1,3 +1,8 @@
 package modtest
 
-const Version string = "v0.0.1"
+import (
+	_ "embed"
+)
+
+//go:embed VERSION.txt
+var Version string
